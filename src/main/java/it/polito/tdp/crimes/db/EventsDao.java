@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import it.polito.tdp.crimes.model.Adiacenza;
 import it.polito.tdp.crimes.model.Event;
 
 
@@ -52,6 +54,84 @@ public class EventsDao {
 			e.printStackTrace();
 			return null ;
 		}
+	}
+	
+	public List<String> getAllVertici(String categoria, int mese){
+		String sql = "SELECT DISTINCT offense_type_id "
+				+ "FROM EVENTS "
+				+ "WHERE offense_category_id=? AND MONTH(reported_date)=? " ;
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+			st.setString(1, categoria);
+			st.setInt(2, mese);
+			
+			List<String> list = new ArrayList<>() ;
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				try {
+					list.add(res.getString("offense_type_id"));
+				} catch (Throwable t) {
+					t.printStackTrace();
+					System.out.println(res.getInt("id"));
+				}
+			}
+			
+			conn.close();
+			return list ;
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null ;
+		}
+	}
+	
+	
+	public List<Adiacenza> getArchi(String categoria, int mese){
+		String sql = "SELECT  e1.offense_type_id as v1, e2.offense_type_id as v2, COUNT( distinct e1.neighborhood_id) as peso "
+				+ "FROM EVENTs e1, EVENTS e2 "
+				+ "WHERE e1.offense_type_id > e2.offense_type_id "
+				+ "AND e1.offense_category_id= e2.offense_category_id "
+				+ "AND e1.offense_category_id=?  "
+				+ "AND MONTH(e1.reported_date)=? "
+				+ "AND MONTH(e1.reported_date)=MONTH(e2.reported_date) "
+				+ "AND e1.neighborhood_id= e2.neighborhood_id "
+				+ "GROUP BY e1.offense_type_id, e2.offense_type_id " ;
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+			st.setString(1, categoria);
+			st.setInt(2, mese);
+			
+			List<Adiacenza> list = new ArrayList<>() ;
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				try {
+					list.add(new Adiacenza(res.getString("v1"), res.getString("v2"), res.getInt("peso")));
+				} catch (Throwable t) {
+					t.printStackTrace();
+					
+				}
+			}
+			
+			conn.close();
+			return list ;
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null ;
+		}
+		
 	}
 
 }
